@@ -1,0 +1,7 @@
+You must implement six JavaScript functions in assignment6.js (which is provided with the assignment).  
+Details about each function are included within that file.  The file assignment6.html is provided as an example of how the grader will use your submitted
+ assignment6.js for testing (assignment6.html will load assignment6.js).  The grader will change the test cases from those provided in assignment6.html.  
+ You must submit exactly one file, assignment6.js and it should not be in a compressed file.  For grading:  A submission which loads correctly without 
+ throwing exceptions will be worth 10 points.  An additional 15 points will be awarded for each correctly working function.  For each function which works 
+ incorrectly (i.e. gives a wrong answer to a test case) but does not throw an exception when executed from the grader's assignment6.html you will receive 
+ 7 points.

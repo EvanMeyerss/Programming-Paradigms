@@ -1,0 +1,74 @@
+<html>
+
+<script>
+
+class Horse
+{
+<!-- Dont need to define variables -->
+	<!-- name -->
+	<!-- breed -->
+	<!-- age -->
+	
+	constructor(n, a = 10)
+	{
+		<!-- "this" makes it a class variable -->
+		this.name = n
+		this.age = a
+	}
+	
+	print() {
+		console.log("Name: " + this.name + "\tAge: " + this.age)
+	}
+	
+	
+	getAge() {
+		return this.age
+	}
+}
+
+
+	
+let horse1 = new Horse("Biscuit", 20)
+horse1.name = "Biscuit"
+console.log(horse1.name)
+let horse2 = new Horse()
+horse2.name = "Donkey"
+console.log(horse2.name)
+horse1.print()
+horse2.print()
+console.log(horse2.getAge())
+
+console.log("Let vs. Var example")
+var x = 10
+console.log(x)
+{
+	let x = 2
+	console.log(x)
+}
+console.log(x)
+
+
+<!-- horse2 = 42 -->
+<!-- console.log(horse2) -->
+
+	
+
+
+
+
+<!-- let sprites = [] -->
+<!-- sprites.push(14) //0 -->
+
+
+<!-- sprites.push("hello") //1 -->
+<!-- sprites.push(1.2) // 2 -->
+<!-- sprites.push(true) //3 -->
+<!-- sprites[10] = "something else" -->
+<!-- //sprites["tuesday'] = "taco -->
+<!-- for(i=0; i < sprites.length; i++) -->
+	<!-- console.log(i, sprites[i]) -->
+	
+	</script>
+	
+
+</html>

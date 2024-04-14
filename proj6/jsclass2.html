@@ -1,0 +1,257 @@
+<html>
+
+<script>
+
+
+
+
+
+
+let c = 4
+const addX = x => n => n + x 
+<!-- function addX(x) { -->
+	<!-- return function(n) { -->
+		<!-- return n + x -->
+	<!-- } -->
+<!-- } -->
+const addThree = addX(3)
+let d = addThree(c)
+console.log(d)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- function createCounter() { -->
+	<!-- let counter = 0 -->
+	<!-- const myFunction = function() { -->
+		<!-- counter = counter + 1 -->
+		<!-- return counter -->
+	<!-- } -->
+	<!-- return myFunction -->
+<!-- } -->
+<!-- const increment = createCounter() -->
+<!-- const c1 = increment() -->
+<!-- const c2 = increment() -->
+<!-- const c3 = increment() -->
+<!-- console.log('example increment', c1, c2, c3) -->
+
+
+
+
+
+
+
+
+
+
+
+<!-- let val = 7 -->
+<!-- function createAdder() { -->
+	<!-- function addNumbers(a,b) { -->
+		<!-- let ret = a + b -->
+		<!-- return ret -->
+	<!-- } -->
+	<!-- return addNumbers -->
+<!-- } -->
+<!-- let adder = createAdder() -->
+<!-- let sum = adder(val, 8) -->
+<!-- console.log(adder) -->
+<!-- console.log(sum) -->
+
+
+
+
+
+
+
+
+<!-- let val1 = 2 -->
+<!-- function multiplyThis(n) { -->
+	<!-- let ret = n*val1 -->
+	<!-- return ret -->
+<!-- } -->
+<!-- let multiplied = multiplyThis(6)  -->
+<!-- console.log('example of scope: ', multiplied) -->
+
+
+<!-- let a = 3 -->
+<!-- function addTwo(x) { -->
+	<!-- let ret = x + 2 -->
+	<!-- return ret -->
+<!-- } -->
+<!-- let b = addTwo(a) -->
+<!-- console.log(b) -->
+
+<!-- const strArray = ['Javascript', 'eclipse', 'horse', 'sun', 'Jupiter', 'happy'] -->
+<!-- function mapForEach(arr, fn) { -->
+	<!-- const newArray = [] -->
+	<!-- for(let i = 0; i < arr.length ; i++) { -->
+		<!-- newArray.push(fn(arr[i])) -->
+	<!-- } -->
+	<!-- return newArray -->
+<!-- } -->
+
+<!-- //our own higher order function -->
+<!-- const lenArray = mapForEach(strArray, function(item) { -->
+	<!-- return item.length -->
+<!-- }) -->
+<!-- //same as above, but with arrow notation -->
+<!-- const lenArray2 = mapForEach(strArray, item => item.length) -->
+
+<!-- // using javascript's map function -->
+<!-- const lenArrayMap = strArray.map(function(item) { -->
+	<!-- return item.length -->
+<!-- }) -->
+<!-- console.log(strArray) -->
+<!-- console.log(lenArray) -->
+<!-- console.log(lenArray2) -->
+<!-- console.log(lenArrayMap) -->
+
+
+
+<!-- const arr = [5, 7, 1, 8, 4] -->
+<!-- const sum = arr.reduce(function(accumulator, currentValue) -->
+<!-- { -->
+	<!-- console.log(accumulator, currentValue) -->
+	<!-- return accumulator + currentValue; -->
+	<!-- } -->
+<!-- ) -->
+<!-- <!-- let sum = 0 --> -->
+<!-- <!-- for(let i = 0; i < arr.length; i++) { --> -->
+	<!-- <!-- sum += arr[i] --> -->
+<!-- <!-- } --> -->
+<!-- console.log(sum) -->
+
+<!-- const persons = [ -->
+	<!-- {name: 'Bob', age: 16}, -->
+	<!-- {name: 'Charlie', age: 22}, -->
+	<!-- {name: 'Mac', age: 30}, -->
+	<!-- {name: 'Alice', age: 42}, -->
+	<!-- {name: 'Horse', age: -1}, -->
+	<!-- {name: 'Frank', age: 21}, -->
+	<!-- {name: 'Dennis', age: 10}, -->
+	<!-- {name: 'Betty', age: 50} ]; -->
+
+<!-- const allowedIn = persons.filter(person => person.age >= 21) -->
+
+<!-- const allowedIn = [] -->
+<!-- for(let i = 0; i < persons.length; i++) { -->
+	<!-- if(persons[i].age >= 21) -->
+		<!-- allowedIn.push(persons[i]) -->
+<!-- } -->
+<!-- console.log(persons) -->
+<!-- console.log(allowedIn) -->
+	
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- const arr1 = [1,2,3] -->
+<!-- const arr2 = arr1.map( -->
+	<!-- function(item) {  -->
+		<!-- return item * 2 -->
+		<!-- } -->
+<!-- ); -->
+<!-- const arr3 = arr1.map(item => item * 2) -->
+
+<!-- console.log(arr1) -->
+<!-- console.log(arr2) -->
+<!-- console.log(arr3) -->
+
+<!-- const birthYear = [1870, 2004, 1, 1999, 2000, 2021, 2070, 2003] -->
+<!-- const ages = birthYear.map(year => 2024 - year) -->
+
+<!-- <!-- const ages = [] --> -->
+<!-- <!-- for(let i = 0; i < birthYear.length; i++)  --> -->
+	<!-- <!-- ages.push(2024-birthYear[i]) --> -->
+<!-- console.log(birthYear) -->
+<!-- console.log(ages) -->
+
+<!-- console.log("updating array 2") -->
+
+<!-- for(let i = 0; i < arr1.length; i++) { -->
+	<!-- arr2.push(arr1[i] * 2) -->
+<!-- } -->
+
+<!-- console.log(arr1) -->
+<!-- console.log(arr2) -->
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- function greeting() { -->
+	<!-- console.log("hello world") -->
+<!-- } -->
+
+<!-- function formalGreeting() { -->
+	<!-- console.log("Hello.") -->
+<!-- } -->
+
+<!-- function casualGreeting() { -->
+	<!-- console.log("'Sup") -->
+<!-- } -->
+
+<!-- function greet(type, greetFormal, greetCasual) { -->
+	<!-- if ( type === 'formal') -->
+		<!-- greetFormal() -->
+	<!-- else if(type === 'casual') -->
+		<!-- greetCasual() -->
+	<!-- else -->
+		<!-- greeting() -->
+<!-- } -->
+
+<!-- greet('casual', formalGreeting, casualGreeting) -->
+
+
+
+<!-- const square = function(x) { -->
+	<!-- return x * x -->
+<!-- } -->
+
+<!-- console.log(square(5)) -->
+<!-- const foo = square -->
+<!-- console.log(foo(6)) -->
+
+<!-- greeting() -->
+<!-- greeting.lang = "english" -->
+<!-- console.log(greeting.lang) -->
+
+</script>
+</html>
