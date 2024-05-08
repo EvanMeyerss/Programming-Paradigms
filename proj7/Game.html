@@ -1,0 +1,1444 @@
+<!-- 
+///////////////////////////////////////////////////////////////
+// Name: 					Evan Meyers                      //
+// Date: 					4/20/2024                        // 
+// Assignment Description: 	Convert Java game to Javascript  //
+/////////////////////////////////////////////////////////////// 
+-->
+
+<head>
+	<title>Pacman - NOW IN JAVASCRIPT!</title>
+	<meta charset="UTF-8">
+</head>
+<body>
+<br>
+<canvas style="float: left" id="myCanvas" width="600" height="600" style="border:1px solid #cccccc;"></canvas>
+<div style="float: left; margin-top: 8%; margin-left: 1.5%; font-style:bold; font-size: .7vw; font-family: Arial, Helvetica, sans-serif; ">
+<h1 style="margin-left: 30%;">
+    Controls:
+</h1>
+<pre>
+|=======================================|
+| Arrow Keys    - Player movement       |
+| Shift         - Activiates sprint     |
+| E/e           - Toggles editing mode  |
+| G/g           - Add ghosts            |
+| P/p           - Add pellets           |
+| F/f           - Add fruit             |
+| A/a           - Add/remove walls      |
+|=======================================|
+
+</pre>
+</div>
+<script type="text/javascript">
+
+class Sprite
+{
+    image = new Image();
+    isValid = true;
+
+    	
+    constructor(x1, y1, w1, h1)
+	{
+		this.x = x1;
+		this.y = y1;
+		this.w = w1;
+        this.h = h1;
+    }
+
+    draw(){}
+
+    update() {}
+
+    // Checks for collision between two sprites
+    doesItCollide(otherSprite) {
+        // current sprite's right is less than the other's left
+        if (this.x + this.w < otherSprite.getX() + 1) {
+            return false;
+        }
+        // current sprite's left is greater than the other's right
+        if (this.x > otherSprite.getX() + otherSprite.getW() - 1) {
+            return false;
+        }
+        // current sprite's toes are greater tahn the other's head
+        if (this.y + this.h < otherSprite.getY() + 1) {
+            return false;
+        } 
+        // current sprite's head is greater than the other's toes
+        if (this.y > otherSprite.getY() + otherSprite.getH() - 1) {
+            return false;
+        } 
+        return true;
+    }
+
+    // Checks if sprite exists at specific coords
+    spriteExists(x1, y1) {
+        if(this.x == x1 && this.y == y1)
+            return true;
+        return false;
+    }
+
+    // States if sprite object moves
+    isMoving() {
+        return false;   
+    }
+
+    // Getters and setters
+    getX() {
+        return this.x;
+    }
+
+    getY() {
+        return this.y;
+    }
+
+    getW() {
+        return this.w;
+    }
+
+    getH() {
+        return this.h;
+    }
+
+    isWall() {
+        return false;
+    }
+
+    ////////////////////////////////
+    // Sprite type identification //
+    ////////////////////////////////
+    isPacman() {
+        return false;
+    }
+
+    isGhost() {
+        return false;
+    }
+
+    isPellet() {
+        return false;
+    }
+
+    isFruit() {
+        return false;
+    }
+
+}
+
+
+
+class Wall extends Sprite
+{
+	constructor(x, y, w, h)
+	{
+		super(x, y, w, h);
+        this.canvas = document.getElementById("myCanvas")
+        this.wallImage = new Image();
+        this.wallImage.src = "images/wall.png";
+	}
+	
+    // Returns validility
+	update() 
+	{
+        return this.isValid;
+	}
+
+    // Draws itself using fixed y-coord
+    draw(yFixed) {
+        let ctx = this.canvas.getContext("2d");
+        ctx.drawImage(this.wallImage, this.x, this.y + yFixed, this.w, this.h);        
+    }
+
+    // Getters & Setters
+    getX() {
+        return this.x;
+    }
+
+    getY() {
+        return this.y;
+    }
+
+    setX(x) {
+        this.x = x;
+    }
+
+    setY(y) {
+        this.y = y;
+    }
+    
+    //----------------------------------------------------------------
+
+    // Wall identification
+    isWall() {
+        return true;
+    }
+}
+
+
+
+class Pacman extends Sprite
+{
+    prevX; prevY; direction = 3; yFixed = 0; frameIteration = 1; speed = 6; MAX_IMAGES_PER_DIRECTION = 4;
+
+	constructor(x, y, w, h)
+	{
+		super(x, y, w, h);
+        this.canvas = document.getElementById("myCanvas")
+        // Initializes array of player images
+        this.pacmanImages = new Image();
+        for (let i = 1; i < this.MAX_IMAGES_PER_DIRECTION * 4 + 1; i++) {
+            this.pacmanImages[i] = View.loadImage("player" + i + ".png");
+        }
+	}
+    
+    // Draws itself
+    draw() {
+		let ctx = this.canvas.getContext("2d");
+        // Y-coord movement logic
+        //////////////////////////
+        if (this.y >= 520) { 
+            this.yFixed = this.y - 240;
+        }
+        else if (this.y <= 40) {
+            this.yFixed = this.y + 240;
+        }
+        else 
+        this.yFixed = 600/2 - 20;
+        // Allows for the player to teleport horizontally
+        //////////////////////////////////////////////////
+        if (this.x >= 600) {
+            this.x = -40;
+        }
+        else if (this.x <= -40) {
+            this.x = 600;
+        }
+        //////////////////////////////////////////////////
+        ctx.drawImage(this.pacmanImages[this.MAX_IMAGES_PER_DIRECTION * this.direction + this.frameIteration], this.x, this.yFixed, this.w, this.h);
+    }
+
+    // Returns validity
+	update() {
+        return this.isValid;
+	}
+
+    // States moving object
+    isMoving() {
+        return true;
+    }
+
+    // Pacman identification
+    isPacman() {
+        return true;
+    }
+   
+    // Iterates the current frame to animate character
+    iterateFrame(){
+        this.frameIteration++;
+        // Sets current frame to 1 if it exceeds 4
+        if (this.frameIteration > this.MAX_IMAGES_PER_DIRECTION) {
+            this.frameIteration = 1;
+        }
+    }   
+
+    // Uses parameters from model to determine current direction and change character position
+    movePlayer(dir) {
+        
+        this.direction = dir;
+        if (this.direction == 0) {
+            this.x -= this.speed;
+        }
+        if (this.direction == 1) {
+            this.y -= this.speed;
+        }
+        if (this.direction == 2) {
+            this.x += this.speed;
+        }
+        if (this.direction == 3) {
+            this.y += this.speed;
+        }
+    }
+
+    // Prevents player from being drawn within a collision
+    getOutOfWall(sprite) {
+
+        // Right
+        if (this.x + this.w >= sprite.getX() && this.prevX + this.w <= sprite.getX()) {
+            this.x = sprite.getX() - this.w;
+        }
+        // Left
+        if (this.x <= sprite.getX() + sprite.getW() && this.prevX >= sprite.getX() + sprite.getW()) {
+            this.x = sprite.getX() + sprite.getW();
+        }
+        
+        if ((this.y + this.h >= sprite.getY() && this.y + this.h <= sprite.getY() + sprite.getH()) && this.prevY + this.h <= sprite.getY()) {
+            this.y = sprite.getY() - this.h;
+        }
+        if ((this.y >= sprite.getY() && this.y <= sprite.getY() + sprite.getH()) && this.prevY >= sprite.getY() + sprite.getH()) {
+
+            this.y = sprite.getY() + sprite.getH();
+        }
+    }
+
+    // Getters and setters
+    //----------------------------------------------------------------
+    setX(x) {
+        this.x = x;
+    }
+
+    setY(y) {
+        this.y = y;
+    }
+
+    // setPrevX(prevX) {
+    //     this.prevX = prevX;
+    // }
+
+    // setPrevY(prevY) {
+    //     this.prevY = prevY;
+    // }
+
+    // setDirection(direction) {
+    //     this.direction = direction;
+    // }
+
+    // Sets player speed to normal
+    normalSpeed() {
+        this.speed = 6;
+    }
+
+    // Lets player sprint
+    sprintSpeed() {
+        this.speed = 8;
+    }
+    //----------------------------------------------------------------
+
+    // Custom toString() method used for debugging
+    toString()
+    {
+        return "Pacman (x,y) = (" + x + ", " + y + ")";
+    }
+
+}
+
+
+
+class Model
+{
+    gridWidth = 40; gridHeight = 40;
+	wallWidth = 40; wallHeight = 40;
+	pelletWidth = 8; pelletHeight = 8;
+	ghostWidth = 32; ghostHeight = 32;
+	fruitWidth = 32; fruitHeight = 32;
+    spriteFoundAtCursorPos;
+    score = 0;
+    //////////////////////////////////////////////
+    
+	constructor()
+	{
+        this.sprites = [];
+        this.queuedSprites = [];
+        this.player = new Pacman(290,285,22,28);
+        this.sprites.push(this.player)
+        // Loads hardcoded sprites
+        this.loadMap()
+	}
+
+	update() {
+        // Updates player element within the element ArrayList
+        this.sprites[0] = this.player;
+		// Adds queued sprites to avoid concurrent modification errors
+		this.sprites = this.sprites.concat(this.queuedSprites);
+        // Removes all elements from queuedSprites[]
+        this.queuedSprites.length = 0;
+		// update sprites, remove if necessary, THEN call collision detection/fixing
+        for (let i = 0; i < this.sprites.length; i++)
+        {
+            let sprite1 = this.sprites[i]
+            if(sprite1.update() == false) 
+            {
+                this.sprites.splice(i,1)   
+            }
+            if(sprite1.isMoving()){
+                for (let j = 0; j <this.sprites.length; j++) {
+                    let sprite2 = this.sprites[j];
+                    if (sprite1 !== sprite2 && sprite1.doesItCollide(sprite2)) {
+                        if(sprite1.isFruit() && sprite2.isWall()) { 			// Fruit vs. Wall
+                            sprite1.getOutOfWall(sprite2);
+                        }
+                        else if(sprite1.isGhost() && sprite2.isWall()) {	    // Ghost vs. Wall
+                            (sprite1).getOutOfWall(sprite2);
+                        }
+                        else if(sprite1.isPacman() && sprite2.isWall()) {	    // Pacman vs. Wall
+                            this.player.getOutOfWall(sprite2);
+                        }
+                        else if (sprite1.isPacman() && sprite2.isGhost()){		// Pacman vs. Ghost
+                            if(sprite2.scorable) {
+                                this.score += 10;
+                            }
+                            (sprite2).eatGhost();
+                        }
+                        else if (sprite1.isPacman() && sprite2.isPellet()) {   	// Pacman vs. Pellet
+                            (sprite2).eatPellet();
+                            this.score += 1;
+                        }
+                        else if (sprite1.isPacman() && sprite2.isFruit()) {		// Pacman vs. Fruit
+                            sprite2.eatFruit();
+                            this.score += 25;
+                        }
+                    }
+                }
+            }
+        }
+	}
+
+    //////////////////////////////
+    // Hardcoded sprite objects //
+    //////////////////////////////
+    loadMap() {
+        /////////////////////////////////////////////////
+        // Pellets
+        /////////////////////////////////////////////////
+        this.sprites.push(new Pellet(376.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,136.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,96.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,176.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(16.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,136.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,96.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,96.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,136.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(576.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,376.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,376.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,376.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,456.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,416.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,376.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,176.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,176.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,136.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,96.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,16.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,-184.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,-144.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,16.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,56.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,96.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,136.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,176.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,-104.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,-24.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,-64.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,16.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,496.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,576.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,656.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,736.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(56.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(96.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,736.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,656.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,496.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,576.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,576.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,496.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,496.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,576.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,616.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,656.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,736.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(336.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(376.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(416.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,776.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,736.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(536.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(496.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,696.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(456.0,656.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,536.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,216.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,256.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(136.0,296.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(176.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(216.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(256.0,336.0, this.pelletWidth, this.pelletHeight))
+        this.sprites.push(new Pellet(296.0,336.0, this.pelletWidth, this.pelletHeight))
+        ///////////
+        // Walls //
+        ///////////
+        this.sprites.push(new Wall(0.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,520.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,520.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,600.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,680.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,760.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(200.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(360.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,800.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,760.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,680.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,600.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(200.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,680.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,680.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(360.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,720.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,680.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,520.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(360.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,640.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(200.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,560.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,440.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,440.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,440.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(360.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(200.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(360.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(200.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,-160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(440.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(120.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,-40.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,0.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,-200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,-200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,-200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,-120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,-80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(240.0,280.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,280.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(320.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(280.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(400.0,280.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(160.0,280.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,440.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,400.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,360.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,160.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(480.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(520.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,480.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,120.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,80.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(80.0,200.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(40.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(560.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(600.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(640.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(640.0,280.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(640.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(600.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-40.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-80.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-120.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-160.0,240.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(0.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-40.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-80.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-120.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-160.0,320.0, this.wallWidth, this.wallHeight))
+        this.sprites.push(new Wall(-160.0,280.0, this.wallWidth, this.wallHeight))
+        ////////////
+        // Ghosts //
+        ////////////
+        this.sprites.push(new Ghost(524.0,-196.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(44.0,-196.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(84.0,764.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(484.0,764.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(324.0,604.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(244.0,604.0, this.ghostWidth, this.ghostHeight))
+        this.sprites.push(new Ghost(284.0,124.0, this.ghostWidth, this.ghostHeight))
+        ////////////
+        // Fruits //
+        ////////////
+        this.sprites.push(new Fruit(364.0,-36.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(364.0,-196.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(204.0,-196.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(204.0,-36.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(44.0,44.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(44.0,524.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(44.0,764.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(524.0,764.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(524.0,524.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(284.0,604.0, this.fruitWidth, this.fruitHeight))
+        this.sprites.push(new Fruit(524.0,44.0, this.fruitWidth, this.fruitHeight))
+    }
+
+    // Add walls to grid
+    setWallGridClick(xClick, yClick) {
+		let posXClick = Math.floor(xClick / this.gridWidth) * this.gridWidth;
+        let posYClick = Math.floor(yClick / this.gridHeight) * this.gridHeight;
+        this.spriteAtCursorPos(posXClick, posYClick);	
+		
+		if (this.spriteFoundAtCursorPos) {
+			for (let i = 0; i < this.sprites.length; i++) {
+				if (this.sprites[i].spriteExists(posXClick, posYClick)) {
+					this.sprites.splice(i, 1);
+				}
+			}
+		}
+		else {
+			let sprite = new Wall(posXClick, posYClick, this.wallWidth, this.wallHeight);
+			this.queuedSprites.push(sprite);
+		}
+	}
+
+    // Add ghosts to grid
+    setGhostGridClick(xClick, yClick) {
+        let posXClick = Math.floor(xClick / this.gridWidth) * this.gridWidth;
+        let posYClick = Math.floor(yClick / this.gridHeight) * this.gridHeight;
+        this.spriteAtCursorPos(posXClick, posYClick);		
+        
+        if (!this.spriteFoundAtCursorPos) {
+            // The "+4" in the coords centers the ghost
+            let sprite = new Ghost(posXClick + 4, posYClick + 4, this.ghostWidth, this.ghostHeight);
+            this.queuedSprites.push(sprite);
+        }
+    }
+
+    // Add pellets to grid
+    setPelletGridClick(xClick, yClick) {
+        let posXClick = Math.floor(xClick / this.gridWidth) * this.gridWidth;
+        let posYClick = Math.floor(yClick / this.gridHeight) * this.gridHeight;
+        this.spriteAtCursorPos(posXClick, posYClick);		
+        
+        if (!this.spriteFoundAtCursorPos) {
+            // The "+16" in the coords centers the pellet
+            let sprite = new Pellet(posXClick + 16, posYClick + 16, this.pelletWidth, this.pelletHeight);
+            this.queuedSprites.push(sprite);
+        }
+    }
+
+    // Add fruit to grid
+    setFruitGridClick(xClick, yClick) {
+        let posXClick = Math.floor(xClick / this.gridWidth) * this.gridWidth;
+        let posYClick = Math.floor(yClick / this.gridHeight) * this.gridHeight;
+        this.spriteAtCursorPos(posXClick, posYClick);		
+        
+        if (!this.spriteFoundAtCursorPos) {
+            // The "+4" in the coords centers the fruit
+            let sprite = new Fruit(posXClick + 4, posYClick + 4, this.fruitWidth, this.fruitHeight);
+            this.queuedSprites.push(sprite);
+        }
+    }
+
+	// Loops through walls ArrayList and checks if wall exists based on inputted grid coords
+	spriteAtCursorPos(x, y) {
+		for (let i = 0; i < this.sprites.length; i++) {
+			if (this.sprites[i].spriteExists(x, y)) {
+				this.spriteFoundAtCursorPos = true;
+				return;
+			}
+		}
+		this.spriteFoundAtCursorPos = false;
+	}
+
+	// Lets player sprint
+	sprintSpeed() {
+		this.player.sprintSpeed();
+	}
+
+	// Sets player speed back to normal
+	normalSpeed() {
+		this.player.normalSpeed();
+	}
+
+	// Following four methods allow for the use of arrow keys in Controller.java
+	changePlayerDirection(dir) {
+		this.player.movePlayer(dir);
+		this.player.iterateFrame();
+	}
+
+}
+
+
+
+class View
+{
+    scrollPosYView = 0;
+	mode = "View"; modeType = null;
+	isEdit = false;
+    /////////////////////////////////
+    
+	constructor(model) {
+		this.model = model;
+		this.canvas = document.getElementById("myCanvas");
+	}
+
+	update()
+	{
+        ////////////////////////////////////////////////////////////////////////
+        // Moves the map screen while not at one of the vertical wall borders //
+		////////////////////////////////////////////////////////////////////////
+		for(let i = 0; i < this.model.sprites.length; i++)
+		{
+			let sprite = this.model.sprites[i];
+			if (sprite.isPacman()) {
+				// Conditionals prevent the camera from going beyond vertical boundaries
+				// The "-20" positions the camera exactly in the middle of the window
+				this.scrollPosYView = ((600/2) - 20 - sprite.y);
+				if (this.scrollPosYView < -240) {
+					this.scrollPosYView = -240;
+				}
+					
+				if (this.scrollPosYView > 240) {
+					this.scrollPosYView = 240;
+				}
+			}
+		}
+		
+        let ctx = this.canvas.getContext("2d");
+		ctx.clearRect(0, 0, 600, 600);
+        
+        //////////////////////
+        // Background color //
+        //////////////////////
+        if(this.mode === "Edit") {
+            ctx.fillStyle = "#EFBC9B";
+        }
+        else {
+            ctx.fillStyle = "#9CAFAA";
+        }
+        ctx.fillRect(0, 0, 600, 600);
+
+		/////////////////////////////////////////////
+        // Makes array of sprites print themselves //
+        /////////////////////////////////////////////
+        for(let i = 0; i < this.model.sprites.length; i++)
+		{
+			let sprite = this.model.sprites[i];
+			sprite.draw(this.scrollPosYView)
+		}
+
+        ////////////////////////////////////////
+        // Score  & Edit Mode Drowshadow Text //
+        ////////////////////////////////////////
+        ctx.fillStyle = "black";
+        ctx.font = "bold 20px Calibri"
+        ctx.fillText("Score: " + this.model.score, 266, 20)
+        ctx.font = "bold 18px Calibri";
+        if(this.mode === "Edit") {
+            ctx.fillText("Edit: " + this.modeType, 9, 588);
+        }
+
+        //////////////////////////////////////
+        // Score and Edit Mode Overlay Text //
+        //////////////////////////////////////
+        ctx.fillStyle = "white";
+        ctx.font = "bold 20px Calibri"
+        ctx.fillText("Score: " + this.model.score, 268, 19);
+        ctx.font = "bold 18px Calibri";
+        if(this.mode === "Edit") {
+            ctx.fillText("Edit: " + this.modeType, 11, 586)
+        }
+	}
+
+    static loadImage(filename) {
+
+        let img = new Image();
+        img.src = "images/" + filename;
+		return img;
+	}
+
+}
+
+
+
+class Controller
+{
+    mode = "View";
+    modeType = "Ghosts"
+    keyE = false; keyG = false; keyF = false; keyP = false;
+
+	constructor(model, view)
+	{
+		this.model = model;
+		this.view = view;
+		this.key_right = false;
+		this.key_left = false;
+		this.key_up = false;
+		this.key_down = false;
+		let self = this;
+		view.canvas.addEventListener("click", function(event) { self.onClick(event); });
+		document.addEventListener('keydown', function(event) { self.keyDown(event); }, false);
+		document.addEventListener('keyup', function(event) { self.keyUp(event); }, false);
+	}
+
+	onClick(event)
+	{
+        this.xClick = event.pageX - this.view.canvas.offsetLeft
+        this.yClick = event.pageY - this.view.canvas.offsetTop - this.view.scrollPosYView
+        if(this.keyE) {
+            if(this.keyG) {
+                this.model.setGhostGridClick(this.xClick, this.yClick);
+            }
+            else if(this.keyF) {
+                this.model.setFruitGridClick(this.xClick, this.yClick)
+            }
+            else if(this.keyP) {
+                this.model.setPelletGridClick(this.xClick, this.yClick)
+            }
+            else if(this.keyA) {
+				this.model.setWallGridClick(this.xClick, this.yClick);
+			}
+        }
+    }
+
+	keyDown(event)
+	{
+        // keycodes
+		if(event.keyCode == 39) this.key_right = true;
+		else if(event.keyCode == 37) this.key_left = true;
+		else if(event.keyCode == 38) this.key_up = true;
+		else if(event.keyCode == 40) this.key_down = true;
+        // Allows player to sprint
+        else if(event.keyCode == 16) this.model.sprintSpeed()
+	}
+
+	keyUp(event)
+	{
+        // keycodes
+		if(event.keyCode == 39) this.key_right = false;
+		else if(event.keyCode == 37) this.key_left = false;
+		else if(event.keyCode == 38) this.key_up = false;
+		else if(event.keyCode == 40) this.key_down = false;
+        // Resets player to walking
+        else if(event.keyCode == 16) this.model.normalSpeed()
+        // Editing mode
+        else if(event.keyCode == 69) {
+            if(this.view.mode === "View") {
+                this.view.mode = "Edit"
+                this.keyE = true;
+                this.view.modeType = "Ghosts"
+                this.keyG = true;
+            }
+            else { 
+                this.view.mode = "View"
+                this.keyE = false;
+            }
+        }
+        else if(event.keyCode == 71) {
+            this.view.modeType = "Ghosts"
+            this.setFalse()
+            this.keyG = true
+        }
+        else if(event.keyCode == 80) {
+            this.view.modeType = "Pellets"
+            this.setFalse()
+            this.keyP = true
+        }
+        else if(event.keyCode == 70) {
+            this.view.modeType = "Fruits"
+            this.setFalse()
+            this.keyF = true;
+        }
+        else if(event.keyCode == 65){
+            this.view.modeType = "Walls"
+            this.setFalse(); 
+            this.keyA = true;
+        }
+
+        
+	}
+
+    setFalse() {
+        this.keyG = false;
+        this.keyP = false;
+        this.keyF = false;
+        this.keyA = false;
+    }
+	update()
+	{
+        // sets player's previous coords for collision fixing
+        this.model.player.prevX = this.model.player.x;
+        this.model.player.prevY = this.model.player.y;
+
+        // controls movement for player
+		
+        if(this.key_up) this.model.changePlayerDirection(1);
+		else if(this.key_down) this.model.changePlayerDirection(3);
+        else if(this.key_left) this.model.changePlayerDirection(0)
+		else if(this.key_right) this.model.changePlayerDirection(2)
+	}
+}
+
+
+
+class Game
+{
+    WINDOW_WIDTH = 600; WINDOW_HEIGHT = 600; MAP_WIDTH = 600; MAP_HEIGHT = 1080;
+	constructor()
+	{
+		this.model = new Model();
+		this.view = new View(this.model);
+		this.controller = new Controller(this.model, this.view);
+	}
+
+	onTimer()
+	{
+		this.controller.update();
+		this.model.update();
+		this.view.update();
+	}
+}
+
+
+
+class Fruit extends Sprite
+{
+    prevX; prevY; bounceDirection = 0;
+    numFruit = 7;
+    speed = 4;
+
+	constructor(x, y, w, h)
+	{
+		super(x, y, w, h);
+        this.bounceDirection = 2;
+        this.canvas = document.getElementById("myCanvas");
+        this.fruitType = Math.floor(Math.random() * 7)
+        this.fruitImages = new Image();
+        for (let i = 0; i < this.numFruit; i++) {
+            this.fruitImages[i] = View.loadImage("fruit" + i + ".png");
+        }
+    }
+    
+	
+	update()
+	{
+        this.move();
+
+        return this.isValid;
+	}
+
+    draw(yFixed) {
+		let ctx = this.canvas.getContext("2d");
+        // Allows for the player to teleport horizontally
+        // ----------------------------------------------------
+        if (this.x >= 600) {
+            this.x = -40;
+        }
+        else if (this.x <= -40) {
+            this.x = 600;
+        }
+        // ----------------------------------------------------
+        ctx.drawImage(this.fruitImages[this.fruitType], this.x, this.y + yFixed, this.w, this.h);
+    }
+
+    // Changes fruit direction and gets out of walls
+    move() { 
+        // Previous coords used for collision fixing 
+        this.prevX = this.x;
+        this.prevY = this.y;
+
+        // Moves fruit depending on bounceDirection
+        if(this.bounceDirection == 0) 
+            this.x+=this.speed;
+        else if(this.bounceDirection == 1)
+            this.y-=this.speed;
+        else if(this.bounceDirection == 2)
+            this.x-=this.speed;
+        else if(this.bounceDirection == 3)
+            this.y+=this.speed;
+
+    }
+
+    // Prevents fruit from going through walls & causes bounce
+    getOutOfWall(sprite) {
+        // Randomly change direction
+        let tempDirection = this.bounceDirection;
+        while (tempDirection == this.bounceDirection) {
+            this.bounceDirection = Math.floor(Math.random() * 4);
+        }
+        // Right
+        if (this.x + this.w >= sprite.getX() && this.prevX + this.w <= sprite.getX()) {
+            this.x = sprite.getX() - this.w;
+        }
+        // Left
+        if (this.x <= sprite.getX() + sprite.getW() && this.prevX >= sprite.getX() + sprite.getW()) {
+            this.x = sprite.getX() + sprite.getW();
+        }
+
+        if ((this.y + this.h >= sprite.getY() && this.y + this.h <= sprite.getY() + sprite.getH()) && this.prevY + this.h <= sprite.getY()) {
+            this.y = sprite.getY() - this.h;
+        }
+        if ((this.y >= sprite.getY() && this.y <= sprite.getY() + sprite.getH()) && this.prevY >= sprite.getY() + sprite.getH()) {
+
+            this.y = sprite.getY() + sprite.getH();
+        }
+
+    }
+
+    isFruit() {
+        return true;
+    }
+
+   isMoving() {
+        return true;
+    }
+
+    // Removes fruit sprite from model
+    eatFruit() {
+        this.isValid = false;
+    }
+    
+}
+
+
+
+class Pellet extends Sprite
+{
+	constructor(x, y, w, h) { 
+        super(x, y, w, h);
+        this.canvas = document.getElementById("myCanvas");
+        this.pelletImage = new Image();
+        this.pelletImage.src = "images/pellet.png";
+    }
+    
+	
+	update() { return this.isValid;}
+
+    draw(yFixed) {
+		let ctx = this.canvas.getContext("2d");
+        ctx.drawImage(this.pelletImage, this.x, this.y + yFixed, this.w, this.h);
+    }
+
+    isPellet() { return true; }
+
+    // Deletes pellet sprite from model
+    eatPellet() { this.isValid = false; }
+}
+
+
+
+class Ghost extends Sprite
+{
+    MAX_IMAGES_PER_DIRECTION = 2; MAX_DEATH_IMAGES = 6;
+    frameIteration = 1; direction = 0; prevX; prevY;
+    speed = 5; isDying = false; deathTimer = 50; ghostType; 
+    scorable = true;
+
+	constructor(x, y, w, h)
+	{
+		super(x, y, w, h);
+        this.direction = 0;
+        this.canvas = document.getElementById("myCanvas");
+        this.ghostType = Math.floor(Math.random() * 4)
+        // Lazy loading
+        // Initializes array of player images
+        this.ghostImages = [];
+        for (let j = 0; j < 4; j++) {
+            this.ghostImages[j] = [];
+            for (let i = 1; i < this.MAX_IMAGES_PER_DIRECTION * 4 + 1; i++) {
+                this.ghostImages[j][i] = View.loadImage(`${j}-${i}.png`);
+            }
+        }
+        this.deathImages = new Image();
+        for (let i = 1; i < this.MAX_DEATH_IMAGES; i++) {
+            this.deathImages[i] = View.loadImage("ghost" + i + ".png");
+        }
+        
+    }
+    
+	
+	update()
+	{
+        // Makes fruit move
+        // --------------------------------
+        if (!this.isDying) {
+            this.move();
+        }
+        // --------------------------------
+        if(this.isDying) {
+            this.deathTimer--;
+            if(this.deathTimer <= 0) {
+                this.isValid = false;
+            }
+        }
+        return this.isValid;
+	}
+
+    draw(yFixed) {
+		let ctx = this.canvas.getContext("2d");
+        // Allows for the player to teleport horizontally
+        // ----------------------------------------------------
+        if (this.x >= 600) {
+            this.x = -40;
+        }
+        else if (this.x <= -40) {
+            this.x = 600;
+        }
+        // ----------------------------------------------------
+        if(this.isDying) {
+            if(this.deathTimer > 40){
+                ctx.drawImage(this.deathImages[1], this.x, this.y + yFixed, this.w, this.h);
+            
+            }
+            else if (this.deathTimer > 30) {
+                ctx.drawImage(this.deathImages[2], this.x, this.y + yFixed, this.w, this.h);
+            
+            }
+            else if (this.deathTimer > 20) {
+                ctx.drawImage(this.deathImages[3], this.x, this.y + yFixed, this.w, this.h);
+            
+            }
+            else if (this.deathTimer > 10) {
+                ctx.drawImage(this.deathImages[4], this.x, this.y + yFixed, this.w, this.h);
+
+            }
+            else {
+                ctx.drawImage(this.deathImages[5], this.x, this.y + yFixed, this.w, this.h);
+
+            }
+        }
+        else {
+            ctx.drawImage(this.ghostImages[this.ghostType][this.MAX_IMAGES_PER_DIRECTION * this.direction + this.frameIteration], this.x, this.y + yFixed, this.w, this.h);
+        }
+    }
+
+    eatGhost() {
+        this.isDying = true;
+        this.scorable = false;
+    }
+
+    move() {
+        this.iterateFrame();
+        this.prevX = this.x;
+        this.prevY = this.y;
+
+
+        if(this.direction == 0) {
+            this.x-=this.speed;
+        }
+        if(this.direction == 1) {
+            this.y-=this.speed;
+        }
+        if(this.direction == 2) {
+            this.x+=this.speed;
+        }
+        if(this.direction == 3) {
+            this.y+=this.speed;
+        }
+    }
+
+    iterateFrame() {
+        this.frameIteration++;
+        // Sets current frame to 1 if it exceeds 2
+        if(this.frameIteration > this.MAX_IMAGES_PER_DIRECTION) {
+            this.frameIteration = 1;
+        }
+    }
+    // Prevents ghost from being drawn within a collision
+    getOutOfWall(sprite) {
+
+        // Right
+        if (this.x + this.w >= sprite.getX() && this.prevX + this.w <= sprite.getX()) {
+            this.x = sprite.getX() - this.w;
+        }
+        // Left
+        if (this.x <= sprite.getX() + sprite.getW() && this.prevX >= sprite.getX() + sprite.getW()) {
+            this.x = sprite.getX() + sprite.getW();
+        }
+
+        if ((this.y + this.h >= sprite.getY() && this.y + this.h <= sprite.getY() + sprite.getH()) && this.prevY + this.h <= sprite.getY()) {
+            this.y = sprite.getY() - this.h;
+        }
+        if ((this.y >= sprite.getY() && this.y <= sprite.getY() + sprite.getH()) && this.prevY >= sprite.getY() + sprite.getH()) {
+
+            this.y = sprite.getY() + sprite.getH();
+        }
+        
+        // Randomly change direction
+        let tempDirection = this.direction;
+        while (tempDirection == this.direction) {
+            this.direction = Math.floor(Math.random() * 4);
+        }
+    }
+
+    isGhost() {
+        return true;
+    }
+
+    isMoving() {
+        return true;
+    }
+
+    scorable() {
+        return this.scorable;
+    }
+}
+
+
+
+let game = new Game();
+let timer = setInterval(function() { game.onTimer(); }, 40);
+
+</script>
+
+</body>

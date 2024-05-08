@@ -1,0 +1,21 @@
+# for j in range(len(self.sprites)): 
+    #	sprite2 = self.sprites[j]
+
+# if isinstance(sprite1, Ghost) and isinstance(sprite2, Wall):
+    #	# print("there's been a collision")
+    #	sprite2.valid = False
+    #	sprite1.getOutOfWall(sprite2)
+
+    # for sprite1 in self.sprites:
+    #	# if not valid, remove from list and continue
+#	if sprite1.update() == False:
+#		self.sprites.remove(sprite1)
+#		continue
+
+    # collision detection and fixing (NOT REMOVING)
+    # for sprite2 in self.sprites:
+    # 	if sprite1 != sprite2 and sprite1.doesItCollide(sprite2):
+    # 		# I'm not going to use this. Use .isPacman() instead
+    # 		if isinstance(sprite1, Pacman) and isinstance(sprite2, Wall):
+    # 			print("there's been a collision")
+    # 			sprite2.valid = False
